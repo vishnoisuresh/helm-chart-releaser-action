@@ -5,7 +5,8 @@ if [[ -n "$DEBUG" ]]; then
     set -x
 fi
 
-CHARTS_DIR=${CHARTS_DIR:-charts}
+# Default to the repository root if CHARTS_DIR is not set
+CHARTS_DIR=${CHARTS_DIR:-.}
 CHART_REPOSITORY=${CHART_REPOSITORY:-""}
 
 lookup_latest_tag() {
@@ -22,7 +23,7 @@ filter_charts() {
         if [[ -f "$file" ]]; then
             echo "$chart"
         else
-           echo "WARNING: $file is missing, assuming that '$chart' is not a Helm chart. Skipping." 1>&2
+            echo "WARNING: $file is missing, assuming that '$chart' is not a Helm chart. Skipping." 1>&2
         fi
     done
 }
@@ -55,7 +56,7 @@ create_git_tag_from_chart() {
     done
 }
 
-# iterate over all built charts and push them to the chart repository
+# Iterate over all built charts and push them to the chart repository
 push_chart() {
     local charts=$1
     for chart in $charts; do
@@ -64,7 +65,7 @@ push_chart() {
     done
 }
 
-# check if required environment variables are set
+# Check if required environment variables are set
 if [[ -z "$CHART_REPOSITORY" ]]; then
     echo "CHART_REPOSITORY is not set"
     exit 1
@@ -74,31 +75,30 @@ if [[ -z "$CHARTS_DIR" ]]; then
     exit 1
 fi
 
-# the directory where the packaged charts will be stored
+# Directory where the packaged charts will be stored
 chart_destination_dir="builds"
 mkdir -p ${chart_destination_dir}
 
-# the last tag that was created
-# we use this to determine which charts have changed since the last release
+# The last tag that was created (used to determine which charts have changed)
 lastTag=$(lookup_latest_tag)
+
 # chart_diffs is a list of charts that have changed since the last release
 chart_diffs=$(lookup_chart_changes "$lastTag" "${CHARTS_DIR}")
-# package the changed charts
+
+# Package the changed charts
 package_chart "$chart_diffs"
 
 ls -l $chart_destination_dir
 
-echo "checking if there are charts to push"
-# check if chart_destination_dir exists
+echo "Checking if there are charts to push"
 if [[ ! -d ${chart_destination_dir} ]]; then
     echo "No charts to push"
     exit 0
 fi
 
-# create a tag for each chart
+# Create a tag for each chart and push to the chart repository
 create_git_tag_from_chart "$(ls $chart_destination_dir)"
-# push the charts to the chart repository
 push_chart "$(ls $chart_destination_dir)"
 
-# cleanup
+# Cleanup
 rm -rf $chart_destination_dir
