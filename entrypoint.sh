@@ -18,8 +18,12 @@ lookup_latest_tag() {
 
 filter_charts() {
     while read -r chart; do
-        [[ ! -d "$chart" ]] && continue
-        local file="$chart/Chart.yaml"
+        # When chart is the root, use Chart.yaml directly
+        if [[ "$chart" == "." ]]; then
+            file="Chart.yaml"
+        else
+            file="$chart/Chart.yaml"
+        fi
         if [[ -f "$file" ]]; then
             echo "$chart"
         else
