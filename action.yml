@@ -1,8 +1,6 @@
 name: "Helm Chart Releaser Action"
 description: |
-  A GitHub Action for packaging and releasing Helm charts.
   This action uses Helm package and Helm push to package and release your charts.
-  The action will tag the commit with the chart version.
 inputs:
   gh_token:
     description: |
